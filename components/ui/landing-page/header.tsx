@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Lightbulb } from "lucide-react"
+import Link from "next/link"
 
 export function Header() {
   return (
@@ -13,11 +14,19 @@ export function Header() {
         </span>
       </div>
       <nav className="flex items-center gap-3">
-        <Button variant="ghost" className="text-foreground hover:bg-primary/20">
-          Sign In
+        <Button 
+          asChild 
+          variant="ghost" 
+          className="text-foreground hover:bg-primary/20"
+        >
+          <Link href="/sign-in">
+            Sign In
+          </Link>
         </Button>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-          Sign Up
+        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Link href="/sign-up">
+            Sign Up
+          </Link>
         </Button>
       </nav>
     </header>
