@@ -2,6 +2,8 @@
 
 import { Plus, Sparkles, TrendingUp, Clock, Star, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { NewProjectDialog } from "./new-project-dialog"
+import { AddChildDialog } from "./add-chilld-dialog"
 
 export function ParentDashboard() {
   const children = [
@@ -113,15 +115,11 @@ export function ParentDashboard() {
               Nurture curiosity, celebrate discoveries ✨
             </p>
           </div>
-          <Button 
-            className="group relative overflow-hidden rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-8 py-6 text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-105"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              <Plus className="h-5 w-5" />
-              New Project
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-orange-500 opacity-0 transition-opacity group-hover:opacity-100" />
-          </Button>
+          <div className="flex items-center gap-2">
+              <AddChildDialog />
+          <NewProjectDialog />
+          </div>
+        
         </div>
 
         {/* Children Cards */}

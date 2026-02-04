@@ -1,25 +1,41 @@
+// proxy.ts
 import { NextResponse, NextRequest } from 'next/server'
+import { getToken } from "next-auth/jwt";
 
-// This function can be marked `async` if using `await` inside
-export function proxy(request: NextRequest) {
-  // Your proxy logic here
-  
-  // Example: Add custom headers
-  const response = NextResponse.next()
-  response.headers.set('x-custom-header', 'my-value')
-  
-  return response
+export async function proxy(request: NextRequest) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith('/parent') || pathname.startsWith('/student') || pathname.startsWith('/admin')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+
+    // CONVERT TO LOWERCASE FOR COMPARISON
+    const userType = (token.type as string)?.toLowerCase();
+
+    if (pathname.startsWith('/parent') && userType !== 'parent') {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+    if (pathname.startsWith('/student') && userType !== 'student') {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+    if (pathname.startsWith('/admin') && userType !== 'admin') {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+  }
+
+  return NextResponse.next();
 }
 
-// Optional: Configure which paths the proxy runs on
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
-}
+    '/parent/:path*',
+    '/student/:path*',
+    '/admin/:path*',
+  ]
+};
