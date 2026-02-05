@@ -38,6 +38,7 @@ model User {
   name      String
   password  String?
   avatar    String?
+  color     String?
   username  String?   @unique
   type      UserType
   familyId  String    @db.ObjectId
@@ -53,6 +54,7 @@ model Project {
   name        String
   description String?
   coverImage  String?
+  color       String?
   status      ProjectStatus @default(DRAFT)
   dueDate     DateTime?
   category    String? // "Science", "History", etc.

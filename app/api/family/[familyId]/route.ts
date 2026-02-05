@@ -27,17 +27,28 @@ export async function GET(req: Request, { params }: Params) {
                         name: true,
                         email: true,
                         type: true,
+                        avatar: true, // Make sure to select this
+                        color: true,  // Make sure to select this
                         createdAt: true,
-                        // Don't include password!
+                        // Fetch the projects for this specific user to calculate stats
+                        projects: {
+                            select: {
+                                status: true
+                            }
+                        }
                     }
                 },
                 projects: {
+                    // ... your existing project includes (owner, researches, etc)
                     include: {
-                        owner: {
+                         owner: {
                             select: {
                                 id: true,
                                 name: true,
                                 type: true,
+                                avatar: true,
+                                // rewards: true, // Careful: rewards is a relation, usually you need rewards: { select: ... } or include
+                                username: true,
                             }
                         },
                         researches: true,
