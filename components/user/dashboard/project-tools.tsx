@@ -1,75 +1,62 @@
 "use client"
 
 import {
-  BookOpen,
-  Microscope,
-  PenTool,
-  Camera,
-  MessageCircle,
-  Sparkles,
-  Plus,
+  Link as LinkIcon,
+  Youtube,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react"
-import { useProjectModal } from "./add-project-modal"
+import { useState } from "react"
+import { AddWebLinkModal } from "@/components/user/tools/add-web-links"
+import { AddYtLinkModal } from "@/components/user/tools/add-yt-links"
+import { AddImgModal } from "@/components/user/tools/add-img"
+import { AddNoteModal } from "@/components/user/tools/add-note"
 
 const tools = [
   {
-    icon: BookOpen,
-    label: "Research",
-    description: "Find facts",
-    color: "bg-primary/20 text-primary",
+    icon: LinkIcon,
+    label: "Web Link",
+    description: "Add websites",
+    color: "bg-blue-500/20 text-blue-600",
+    modal: "web",
   },
   {
-    icon: Microscope,
-    label: "Experiment",
-    description: "Try things",
-    color: "bg-secondary/30 text-secondary-foreground",
+    icon: Youtube,
+    label: "YouTube",
+    description: "Add videos",
+    color: "bg-red-500/20 text-red-600",
+    modal: "youtube",
   },
   {
-    icon: PenTool,
-    label: "Write",
-    description: "Take notes",
-    color: "bg-accent/30 text-accent-foreground",
-  },
-  {
-    icon: Camera,
-    label: "Capture",
+    icon: ImageIcon,
+    label: "Image",
     description: "Add photos",
-    color: "bg-primary/20 text-primary",
+    color: "bg-purple-500/20 text-purple-600",
+    modal: "image",
   },
   {
-    icon: MessageCircle,
-    label: "Ask AI",
-    description: "Get help",
-    color: "bg-secondary/30 text-secondary-foreground",
-  },
-  {
-    icon: Sparkles,
-    label: "Present",
-    description: "Show off",
-    color: "bg-accent/30 text-accent-foreground",
+    icon: FileText,
+    label: "Note",
+    description: "Write notes",
+    color: "bg-green-500/20 text-green-600",
+    modal: "note",
   },
 ]
 
 export function ProjectTools() {
-  const { openModal } = useProjectModal()
+  const [activeModal, setActiveModal] = useState<string | null>(null)
 
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">Project Tools</h2>
-        <button
-          onClick={openModal}
-          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          New Project
-        </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6 lg:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
         {tools.map((tool) => (
           <button
             key={tool.label}
+            onClick={() => setActiveModal(tool.modal)}
             className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md lg:p-5"
           >
             <div
@@ -84,6 +71,23 @@ export function ProjectTools() {
           </button>
         ))}
       </div>
+
+      <AddWebLinkModal 
+        open={activeModal === "web"} 
+        onOpenChange={(open) => !open && setActiveModal(null)} 
+      />
+      <AddYtLinkModal 
+        open={activeModal === "youtube"} 
+        onOpenChange={(open) => !open && setActiveModal(null)} 
+      />
+      <AddImgModal 
+        open={activeModal === "image"} 
+        onOpenChange={(open) => !open && setActiveModal(null)} 
+      />
+      <AddNoteModal 
+        open={activeModal === "note"} 
+        onOpenChange={(open) => !open && setActiveModal(null)} 
+      />
     </section>
   )
 }

@@ -5,7 +5,7 @@ import { Play, Clock, Star, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 
-export function CurrentProject() {
+export function CurrentProjects() {
   return (
     <section className="flex-1">
       <div className="mb-4 flex items-center justify-between">

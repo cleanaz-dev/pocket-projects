@@ -1,18 +1,24 @@
-"use client"
+"use client";
 
-import { Lightbulb, Bell, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Link from "next/link"
+import { Lightbulb, Bell, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 
-export function DashboardHeader() {
+interface DashboardHeaderProps {
+  name: string;
+}
+
+export function DashboardHeader({ name }: DashboardHeaderProps) {
   return (
     <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
       <Link href="/" className="flex items-center gap-2">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
           <Lightbulb className="h-5 w-5 text-primary-foreground" />
         </div>
-        <span className="text-lg font-bold text-foreground">Pocket Projects</span>
+        <span className="text-lg font-bold text-foreground">
+          Pocket Projects
+        </span>
       </Link>
 
       <div className="hidden flex-1 max-w-md mx-8 md:block">
@@ -34,10 +40,10 @@ export function DashboardHeader() {
         <Avatar className="h-9 w-9 border-2 border-primary/30">
           <AvatarImage src="/avatar-kid.jpg" alt="User" />
           <AvatarFallback className="bg-accent text-accent-foreground text-sm font-medium">
-            JD
+            {name.slice(0, 1)}
           </AvatarFallback>
         </Avatar>
       </div>
     </header>
-  )
+  );
 }
