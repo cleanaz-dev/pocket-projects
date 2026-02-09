@@ -25,7 +25,7 @@ export async function GET(request: Request, { params }: Params) {
         rewards: true,
       },
     });
-
+    console.log("student:", student)
     if (!student) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }

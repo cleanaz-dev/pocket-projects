@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma/config"
+import { SaveProjectImage } from "@/lib/aws" // <--- Import your S3 helper
 
 interface Params {
     params: Promise<{
@@ -50,12 +51,13 @@ export async function POST(req: Request, { params }: Params) {
             )
         }
 
-        // Create the project
-        const project = await prisma.project.create({
+        // 1. Create the project first (using the temporary AI URL or null initially)
+        // We use 'let' because we might update it with the S3 URL immediately after
+        let project = await prisma.project.create({
             data: {
                 name: body.name,
                 description: body.description || null,
-                coverImage: body.coverImage || null,
+                coverImage: body.coverImage || null, // Temporary AI URL goes here
                 category: body.category || null,
                 grade: body.grade || null,
                 dueDate: body.dueDate ? new Date(body.dueDate) : null,
@@ -75,6 +77,36 @@ export async function POST(req: Request, { params }: Params) {
                 notes: true,
             }
         })
+
+        // 2. If there is a cover image (AI URL), save it to S3 and update the record
+        if (body.coverImage) {
+            try {
+                // Upload to S3
+                const s3Url = await SaveProjectImage(body.coverImage, familyId, project.id)
+
+                // Update the project record with the permanent S3 URL
+                project = await prisma.project.update({
+                    where: { id: project.id },
+                    data: { coverImage: s3Url },
+                    include: {
+                        owner: {
+                            select: {
+                                id: true,
+                                name: true,
+                                type: true,
+                            }
+                        },
+                        researches: true,
+                        notes: true,
+                    }
+                })
+            } catch (imageError) {
+                console.error("Failed to save image to S3:", imageError)
+                // We don't throw an error here because we don't want to fail the 
+                // whole request if just the image upload fails. 
+                // The project will still exist with the temporary URL.
+            }
+        }
 
         return NextResponse.json(project, { status: 201 })
 

@@ -21,3 +21,23 @@ export function getColorGradient(color: string | null | undefined): string {
   // Return the mapped gradient or fallback to blue if the color isn't found
   return GRADIENT_MAP[normalizedColor] || GRADIENT_MAP["blue"];
 }
+
+// lib/utils/image-url.ts
+export function getImageUrl(key: string | null | undefined): string {
+  if (!key) return "/placeholder-project.jpg";
+  
+  if (key.startsWith("http://") || key.startsWith("https://")) {
+    return key;
+  }
+  
+  if (key.startsWith("/")) {
+    return key;
+  }
+  
+  // Extract familyId from the key (first segment)
+  const parts = key.split('/');
+  const familyId = parts[0];
+  const remainingKey = parts.slice(1).join('/');
+  
+  return `/api/family/${familyId}/media/${remainingKey}`;
+}

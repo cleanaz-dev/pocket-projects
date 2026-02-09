@@ -7,17 +7,19 @@ import StudentWelcome from "./student-welcome";
 import AiAssistant from "../assistant/ai-assistant";
 
 export default function DashboardWrapper() {
-  const { name, isLoading } = useStudent();
+  const { name, isLoading, projects } = useStudent();
 
   return (
-    <div className="flex  flex-col  bg-background">
+    <div className="flex flex-col bg-background">
       <DashboardHeader name={name}/>
       <main className="flex flex-1 flex-col gap-6 p-6 lg:p-8 pb-20">
         <StudentWelcome />
-        <CurrentProjects />
+        <CurrentProjects 
+          projects={projects}
+          isLoading={isLoading}
+        />
         <AiAssistant />
       </main>
-   
     </div>
   );
 }

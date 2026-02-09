@@ -1,63 +1,79 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Sparkles } from "lucide-react"
-import { useParent } from "@/context/parent-context"
-
-const PROJECT_EMOJIS = [
-  { emoji: "🌋", label: "Volcano", color: "from-orange-400 to-red-500" },
-  { emoji: "🏛️", label: "History", color: "from-amber-400 to-yellow-600" },
-  { emoji: "🪐", label: "Space", color: "from-purple-400 to-indigo-500" },
-  { emoji: "🦕", label: "Dinosaurs", color: "from-green-400 to-emerald-600" },
-  { emoji: "🌊", label: "Ocean", color: "from-blue-400 to-cyan-500" },
-  { emoji: "🔬", label: "Science", color: "from-pink-400 to-rose-500" },
-  { emoji: "🎨", label: "Art", color: "from-fuchsia-400 to-purple-500" },
-  { emoji: "📚", label: "Literature", color: "from-indigo-400 to-blue-500" },
-]
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Sparkles, Loader2, Image as ImageIcon, RefreshCcw, X } from "lucide-react";
+import { useParent } from "@/context/parent-context";
+import useGenerateDescription from "@/hooks/use-generate-description";
+import useGenerateProjectImage from "@/hooks/use-generate-project-image";
 
 const CATEGORIES = [
   "Social Media",
   "AI",
   "Coding",
   "Nutrition",
-  "Hobbies"
-]
+  "Hobbies",
+  "Knowledge",
+];
 
-const GRADES = [
-  "Primary",
-  "Secondary",
-  "High School",
-]
+const GRADES = ["Primary", "Secondary", "High School"];
 
 interface NewProjectDialogProps {
-  trigger?: React.ReactNode
+  trigger?: React.ReactNode;
 }
 
 export function NewProjectDialog({ trigger }: NewProjectDialogProps) {
-  const { family, familyId } = useParent()
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const { family, familyId } = useParent();
   
-  // Form state
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [selectedEmoji, setSelectedEmoji] = useState(PROJECT_EMOJIS[0])
-  const [selectedChild, setSelectedChild] = useState("")
-  const [category, setCategory] = useState("")
-  const [grade, setGrade] = useState("")
-  const [dueDate, setDueDate] = useState("")
+  // Hooks
+  const { generate: generateDesc, isGenerating: isGeneratingDesc } = useGenerateDescription();
+  const { generateImage, isGeneratingImage } = useGenerateProjectImage();
 
-  const children = family?.users.filter(user => user.type === "CHILD") || []
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Form state
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [generatedImageUrl, setGeneratedImageUrl] = useState(""); // Only state for image
+  
+  const [selectedChild, setSelectedChild] = useState("");
+  const [category, setCategory] = useState("");
+  const [grade, setGrade] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  
+  const children = family?.users.filter((user) => user.type === "CHILD") || [];
+
+  // Check if we have the 3 required variables for generation
+  const canGenerateImage = name.trim() !== "" && category !== "" && grade !== "";
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
+
+    // Validation: Ensure image exists
+    if (!generatedImageUrl) {
+        alert("Please generate a cover image for the project.");
+        setLoading(false);
+        return;
+    }
 
     try {
       const response = await fetch(`/api/family/${familyId}/projects`, {
@@ -66,65 +82,79 @@ export function NewProjectDialog({ trigger }: NewProjectDialogProps) {
         body: JSON.stringify({
           name,
           description,
-          coverImage: selectedEmoji.emoji,
+          coverImage: generatedImageUrl, // <--- ONLY sends the generated URL
           ownerId: selectedChild,
           category,
           grade,
           dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         }),
-      })
+      });
 
-      if (!response.ok) throw new Error("Failed to create project")
+      if (!response.ok) throw new Error("Failed to create project");
 
-      // Reset form and close dialog
-      setName("")
-      setDescription("")
-      setSelectedEmoji(PROJECT_EMOJIS[0])
-      setSelectedChild("")
-      setCategory("")
-      setGrade("")
-      setDueDate("")
-      setOpen(false)
+      // Reset form
+      setName("");
+      setDescription("");
+      setGeneratedImageUrl("");
+      setSelectedChild("");
+      setCategory("");
+      setGrade("");
+      setDueDate("");
+      setOpen(false);
 
-      // Refresh the page or mutate SWR data
-      window.location.reload()
+      window.location.reload();
     } catch (error) {
-      console.error("Error creating project:", error)
-      alert("Failed to create project. Please try again.")
+      console.error("Error creating project:", error);
+      alert("Failed to create project. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const handleAutoGenerateDescription = async () => {
+    if (!name) return;
+    const generatedText = await generateDesc(name, category, grade);
+    if (generatedText) setDescription(generatedText);
+  };
+
+  const handleAutoGenerateImage = async () => {
+    if (!canGenerateImage) {
+        alert("Please enter a Project Name, Category, and Grade Level first.");
+        return;
+    }
+    const url = await generateImage(name, category, grade);
+    if (url) {
+      setGeneratedImageUrl(url);
+    }
+  };
 
   const defaultTrigger = (
-    <Button 
-      className="group relative overflow-hidden rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-8 py-6 text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-105"
-    >
+    <Button className="group relative overflow-hidden rounded-full bg-gradient-to-r from-orange-500 to-rose-500 px-8 py-6 text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-105">
       <span className="relative z-10 flex items-center gap-2">
         <Plus className="h-5 w-5" />
         New Project
       </span>
       <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-orange-500 opacity-0 transition-opacity group-hover:opacity-100" />
     </Button>
-  )
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || defaultTrigger}
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
       <DialogContent className="font-body max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-display text-3xl text-gray-900" style={{ 
-            textShadow: '2px 2px 0px rgba(251, 146, 60, 0.2)'
-          }}>
+          <DialogTitle
+            className="font-display text-3xl text-gray-900"
+            style={{ textShadow: "2px 2px 0px rgba(251, 146, 60, 0.2)" }}
+          >
             <Sparkles className="mr-2 inline h-8 w-8 text-amber-500" />
             Create New Project
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-          {/* Project Name */}
+          
+          {/* 1. Project Name */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-base font-semibold text-gray-700">
               Project Name
@@ -139,30 +169,113 @@ export function NewProjectDialog({ trigger }: NewProjectDialogProps) {
             />
           </div>
 
-          {/* Emoji Selection */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold text-gray-700">
-              Choose a Project Icon
-            </Label>
-            <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
-              {PROJECT_EMOJIS.map((item) => (
-                <button
-                  key={item.emoji}
-                  type="button"
-                  onClick={() => setSelectedEmoji(item)}
-                  className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl transition-all hover:scale-110 ${
-                    selectedEmoji.emoji === item.emoji
-                      ? `bg-gradient-to-br ${item.color} shadow-lg scale-110`
-                      : "bg-gray-100 hover:bg-gray-200"
-                  }`}
-                >
-                  {item.emoji}
-                </button>
-              ))}
+          {/* 2. Category and Grade (Moved UP so they are filled before Image) */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="category" className="text-base font-semibold text-gray-700">
+                Category
+              </Label>
+              <Select value={category} onValueChange={setCategory} required>
+                <SelectTrigger className="rounded-xl border-2 border-gray-200 px-4 py-6 text-base">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat} className="text-base">
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="grade" className="text-base font-semibold text-gray-700">
+                Grade Level
+              </Label>
+              <Select value={grade} onValueChange={setGrade} required>
+                <SelectTrigger className="rounded-xl border-2 border-gray-200 px-4 py-6 text-base">
+                  <SelectValue placeholder="Select grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRADES.map((g) => (
+                    <SelectItem key={g} value={g} className="text-base">
+                      {g}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Assign to Child */}
+          {/* 3. Project Cover Image (AI Only) */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold text-gray-700">
+              Project Cover Image
+            </Label>
+            
+            {!generatedImageUrl ? (
+                // EMPTY STATE / GENERATE BUTTON
+                <div className="flex h-48 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+                    <div className="mb-4 rounded-full bg-purple-100 p-3">
+                        <ImageIcon className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <p className="mb-4 text-sm text-gray-500">
+                        {canGenerateImage 
+                            ? "Ready to generate your custom cover!" 
+                            : "Enter Name, Category, and Grade to generate a cover."}
+                    </p>
+                    <Button
+                        type="button"
+                        onClick={handleAutoGenerateImage}
+                        disabled={!canGenerateImage || isGeneratingImage}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                        {isGeneratingImage ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...
+                        </>
+                        ) : (
+                        <>
+                            <Sparkles className="mr-2 h-4 w-4" /> Generate Cover
+                        </>
+                        )}
+                    </Button>
+                </div>
+            ) : (
+                // GENERATED IMAGE DISPLAY
+                <div className="relative group overflow-hidden rounded-2xl border-2 border-purple-200">
+                    <img 
+                        src={generatedImageUrl} 
+                        alt="Generated Project Cover" 
+                        className="h-64 w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                            type="button" 
+                            variant="secondary" 
+                            size="sm"
+                            onClick={handleAutoGenerateImage}
+                            disabled={isGeneratingImage}
+                        >
+                            <RefreshCcw className="mr-2 h-4 w-4" />
+                            Regenerate
+                        </Button>
+                        <Button 
+                            type="button" 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => setGeneratedImageUrl("")}
+                        >
+                            <X className="mr-2 h-4 w-4" />
+                            Remove
+                        </Button>
+                    </div>
+                </div>
+            )}
+          </div>
+
+          {/* 4. Assign to Child */}
           <div className="space-y-2">
             <Label htmlFor="child" className="text-base font-semibold text-gray-700">
               Assign to Child
@@ -181,46 +294,7 @@ export function NewProjectDialog({ trigger }: NewProjectDialogProps) {
             </Select>
           </div>
 
-          {/* Category and Grade */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="category" className="text-base font-semibold text-gray-700">
-                Category
-              </Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="rounded-xl border-2 border-gray-200 px-4 py-6 text-base">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat} className="text-base">
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="grade" className="text-base font-semibold text-gray-700">
-                Grade Level
-              </Label>
-              <Select value={grade} onValueChange={setGrade}>
-                <SelectTrigger className="rounded-xl border-2 border-gray-200 px-4 py-6 text-base">
-                  <SelectValue placeholder="Select grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {GRADES.map((g) => (
-                    <SelectItem key={g} value={g} className="text-base">
-                      {g}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Due Date */}
+          {/* 5. Due Date */}
           <div className="space-y-2">
             <Label htmlFor="dueDate" className="text-base font-semibold text-gray-700">
               Due Date (Optional)
@@ -234,22 +308,41 @@ export function NewProjectDialog({ trigger }: NewProjectDialogProps) {
             />
           </div>
 
-          {/* Description */}
+          {/* 6. Description */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-base font-semibold text-gray-700">
-              Description (Optional)
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="description" className="text-base font-semibold text-gray-700">
+                Description (Optional)
+              </Label>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleAutoGenerateDescription}
+                disabled={!name || isGeneratingDesc}
+                className="h-8 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+              >
+                {isGeneratingDesc ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                {isGeneratingDesc ? "Writing..." : "Auto-Generate"}
+              </Button>
+            </div>
+
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What will this project be about?"
+              placeholder={isGeneratingDesc ? "AI is writing your description..." : "What will this project be about?"}
               rows={4}
               className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base focus:border-orange-400"
             />
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <div className="flex gap-3 pt-4">
             <Button
               type="button"
@@ -262,7 +355,7 @@ export function NewProjectDialog({ trigger }: NewProjectDialogProps) {
             </Button>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !generatedImageUrl} // Prevent submit without image
               className="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 py-6 text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-105"
             >
               {loading ? "Creating..." : "Create Project"}
@@ -271,5 +364,5 @@ export function NewProjectDialog({ trigger }: NewProjectDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

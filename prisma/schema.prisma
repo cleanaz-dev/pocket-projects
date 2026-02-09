@@ -110,12 +110,14 @@ model Research {
   title     String
   projectId String    @db.ObjectId
   criteria  String
+  goal      String?
   project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   webLinks  WebLink[]
   ytLinks   YtLink[]
   imgLinks  ImgLink[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  overallSummary String?
 }
 
 model WebLink {
